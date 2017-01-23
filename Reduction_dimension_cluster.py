@@ -12,6 +12,7 @@ filename = 'fusion_semaine3_python_tfid_1.csv'
 import numbers
 import collections
 from sklearn.decomposition import PCA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 def brutal_column():
     df = pd.read_csv(os.path.join(path, filename))
@@ -22,12 +23,16 @@ def brutal_column():
 
 #brutal_column()
 
-def pca():
+def pca(n):
     df = brutal_column() 
-    pca = PCA(n_components=20, svd_solver='full')
+    pca = PCA(n_components=n, svd_solver='full')
     fit = pca.fit(df)
     print(pca.explained_variance_ratio_) 
     return fit 
 
+n= 20
+pca(n)
 
-pca()
+def lda(n):
+    df = brutal_column()
+    
