@@ -11,6 +11,9 @@ from nltk.tokenize import sent_tokenize
 import re
 import enchant
 import pandas as pd
+from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
+
 
 
 class Tokenizer:
@@ -51,36 +54,28 @@ class Tokenizer:
         for i,token in enumerate(tweet):
             tweet[i] = stemmer.stem(token)
         return tweet
-        '''
-    def tokenize(self, word):
-        word=re.sub(r'https?:\/\/.*[\r\n]*', 'link', word, flags=re.MULTILINE)
-        word=re.sub(r'http?:\/\/.*[\r\n]*', 'link', word, flags=re.MULTILINE)
-        word=re.sub(r'(?<=^|(?<=[^a-zA-Z0-9-_\.]))@([A-Za-z]+[A-Za-z0-9]+)','user', word,flags=re.MULTILINE)
-        word=re.sub(r'\n','', word,flags=re.MULTILINE)
-        word=re.sub(r'\r','', word,flags=re.MULTILINE)
-        for p in list(punctuation):
-            word=word.replace(p,' ')
-        # first tokenize by sentence, then by word to ensure that punctuation is caught as it's own token
-        tokens = [word for sent in sent_tokenize(word) for word in word_tokenize(sent)]
-        filtered_tokens = []
-        # filter out any tokens not containing letters (e.g., numeric tokens, raw punctuation)
-        for token in tokens:
-            if len(token) > 1: #and re.search('[a-zA-Z]', token)):
-                filtered_tokens.append(token)
-        return filtered_tokens
-        '''
-    def tfidf(self, vectorizer, text, index):
+
+    def tfidf(self, tkz, text, index):
+        vectorizer = TfidfVectorizer(preprocessor = None, tokenizer = tkz.tokenize,
+                             stop_words = stopwords.words('french'))
         sparse = vectorizer.fit_transform(text).toarray()
         return pd.DataFrame(sparse, columns=vectorizer.get_feature_names(), index = index)
 
-    def bigrams(self, vectorizer, text, index):
+    def bigrams(self, tkz, text, index):
+        vectorizer = TfidfVectorizer(preprocessor=None, tokenizer=tkz.tokenize,
+                             stop_words=stopwords.words('french'), ngram_range = (2,2))
+        
         vectorizer.fit(text)
         cols = [c for c in vectorizer.get_feature_names() if 'controleur' in c]
-        sparse = vectorizer.transform(text.iloc[:text.shape[0]//2]).toarray()
+        
+        sparse = vectorizer.transform(text.iloc[:text.shape[0]//3]).toarray()
         tfidf_bi = pd.DataFrame(sparse, columns=vectorizer.get_feature_names(),
-                index = index[:len(index)//2])[cols]
+                index = index[:len(index)//3])[cols]
 
-        sparse = vectorizer.transform(text.iloc[text.shape[0]//2:]).toarray()
-
+        sparse = vectorizer.transform(text.iloc[text.shape[0]//3:(2*text.shape[0])//3]).toarray()
+        tfidf_bi = pd.concat([tfidf_bi,pd.DataFrame(sparse, columns=vectorizer.get_feature_names(),
+                index = index[len(index)//3:(2*len(index))//3])[cols]])
+        sparse = vectorizer.transform(text.iloc[(2*text.shape[0])//3:]).toarray()
         return pd.concat([tfidf_bi,pd.DataFrame(sparse, columns=vectorizer.get_feature_names(),
-                index = index[len(index)//2:])[cols]])
+                index = index[(2*len(index))//3:])[cols]])
+
