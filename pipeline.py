@@ -6,7 +6,7 @@ from tokenizer import Tokenizer
 import numpy as np
 
 path = '/home/valentin/Documents/datacamp'
-filename = 'set_labelised_10k.csv'
+filename = 'set_labelised_10k_relabelisted.csv'
 
 tweets = pd.read_csv(os.path.join(path, filename), dtype={"text": str},
                  low_memory = False)
@@ -50,7 +50,7 @@ print(tfidf_test.shape)
 appendTrain = [c for c in list(tfidf_test) if c not in list(tfidf)]
 appendTest = [c for c in list(tfidf) if c not in list(tfidf_test)]
 
-tfidf = pd.concat([tfidf, pd.DataFrame(np.zeros((tfidf.shape[0], 
+tfidf = pd.concat([tfidf, pd.DataFrame(np.zeros((tfidf.shape[0],
         len(appendTrain))), columns = appendTrain, index = index)], axis = 1)
 tfidf_test = pd.concat([tfidf_test, pd.DataFrame(np.zeros((tfidf_test.shape[0],
     len(appendTest))), columns = appendTest, index = index_test)], axis = 1)

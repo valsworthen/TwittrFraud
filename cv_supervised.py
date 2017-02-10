@@ -19,7 +19,7 @@ from sklearn.metrics import fbeta_score
 
 
 path = '/home/valentin/Documents/datacamp'
-filename = 'set_labelised_10k.csv'
+filename = 'set_labelised_10k_relabelisted.csv'
 
 tweets = pd.read_csv(os.path.join(path, filename), dtype={"text": str},
                  low_memory = False)
