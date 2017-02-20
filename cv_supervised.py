@@ -94,6 +94,28 @@ X_new = model.transform(X)
 
 #CLASSIFICATION
 
+from sklearn.metrics import make_scorer
+f05_scorer = make_scorer(score_func)
+
+from sklearn.model_selection import cross_val_score
+
+#Calcul fbeta score moyen
+def score_func(y, y_pred, **kwargs):
+
+    Y_test1 = y.copy()
+    Y_test1[Y_test1 == 2] = 0
+    pred1 = y_pred.copy()
+    pred1[pred1==2] = 0
+    f1 = fbeta_score(Y_test1, pred1, beta = 0.5)
+
+    Y_test2 = y.copy()
+    Y_test2[Y_test2 == 2] = 1
+    pred2 = y_pred.copy()
+    pred2[pred2==2] = 1
+    f2 = fbeta_score(Y_test2, pred2, beta = 0.5)
+
+    return np.average([f1,f2])
+
 '''
 X_train, X_test, Y_train, Y_test = train_test_split(X,Y)
 
@@ -134,25 +156,7 @@ def plot_confusion_matrix(cm, classes,
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-'''
-#Calcul fbeta score moyen
-def score_func(y, y_pred, **kwargs):
 
-    Y_test1 = y.copy()
-    Y_test1[Y_test1 == 2] = 0
-    pred1 = y_pred.copy()
-    pred1[pred1==2] = 0
-    f1 = fbeta_score(Y_test1, pred1, beta = 0.5)
-
-    Y_test2 = y.copy()
-    Y_test2[Y_test2 == 2] = 1
-    pred2 = y_pred.copy()
-    pred2[pred2==2] = 1
-    f2 = fbeta_score(Y_test2, pred2, beta = 0.5)
-
-    return np.average([f1,f2])
-
-'''
 class_names = np.unique(Y)
 
 
@@ -168,27 +172,10 @@ score_func(Y_test,pred)
 '''
 
 #CROSS VALIDATION
-from sklearn.metrics import make_scorer
-f05_scorer = make_scorer(score_func)
 
-from sklearn.model_selection import cross_val_score
+
+'''
 estimators = [200,250,300]
-'''
-200
-0.225481172054
-250
-0.238336451038
-300
-0.208889194582
-350
-0.20771403652
-400
-0.218339243864
-450
-0.172111948222
-500
-0.178991514537
-'''
 
 res = []
 print('Début CV')
@@ -200,7 +187,7 @@ for i, n in enumerate(estimators):
             cv = 2))
     print(np.mean(res[i]))
 print(res)
-
+'''
 #HYPEROPT
 
 def objective_function(x_int):
@@ -208,13 +195,11 @@ def objective_function(x_int):
     objective_function.n_iterations += 1
     n_estimators, max_depth = x_int
     n_estimators = int(n_estimators)
-    print(n_estimators)
     max_depth = int(max_depth)
-    print(max_depth)
     clf = XGBClassifier(learning_rate = 0.1, n_estimators=n_estimators,
                 max_depth=max_depth)
     
-    scores = cross_val_score(clf, X_new, Y, cv=3, scoring=f05_scorer)
+    scores = cross_val_score(clf, X_new, Y, cv=5, scoring=f05_scorer)
     print(objective_function.n_iterations, \
         ": n_estimators = ", n_estimators, \
         "\tmax_depth = ", max_depth, \
