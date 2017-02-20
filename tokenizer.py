@@ -13,6 +13,7 @@ import enchant
 import pandas as pd
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
 
 
 
@@ -64,10 +65,10 @@ class Tokenizer:
     def bigrams(self, tkz, text, index):
         vectorizer = TfidfVectorizer(preprocessor=None, tokenizer=tkz.tokenize,
                              stop_words=stopwords.words('french'), ngram_range = (2,2))
-        
+
         vectorizer.fit(text)
         cols = [c for c in vectorizer.get_feature_names() if 'controleur' in c]
-        
+
         sparse = vectorizer.transform(text.iloc[:text.shape[0]//3]).toarray()
         tfidf_bi = pd.DataFrame(sparse, columns=vectorizer.get_feature_names(),
                 index = index[:len(index)//3])[cols]
@@ -79,3 +80,26 @@ class Tokenizer:
         return pd.concat([tfidf_bi,pd.DataFrame(sparse, columns=vectorizer.get_feature_names(),
                 index = index[(2*len(index))//3:])[cols]])
 
+    def counter(self, tkz, text, index):
+        vectorizer = CountVectorizer(preprocessor = None, tokenizer = tkz.tokenize,
+                             stop_words = stopwords.words('french'))
+        sparse = vectorizer.fit_transform(text).toarray()
+        return pd.DataFrame(sparse, columns=vectorizer.get_feature_names(), index = index)
+
+    def count_bigrams(self, tkz, text, index):
+        vectorizer = CountVectorizer(preprocessor=None, tokenizer=tkz.tokenize,
+                             stop_words=stopwords.words('french'), ngram_range = (2,2))
+
+        vectorizer.fit(text)
+        cols = [c for c in vectorizer.get_feature_names() if 'controleur' in c]
+
+        sparse = vectorizer.transform(text.iloc[:text.shape[0]//3]).toarray()
+        tfidf_bi = pd.DataFrame(sparse, columns=vectorizer.get_feature_names(),
+                index = index[:len(index)//3])[cols]
+
+        sparse = vectorizer.transform(text.iloc[text.shape[0]//3:(2*text.shape[0])//3]).toarray()
+        tfidf_bi = pd.concat([tfidf_bi,pd.DataFrame(sparse, columns=vectorizer.get_feature_names(),
+                index = index[len(index)//3:(2*len(index))//3])[cols]])
+        sparse = vectorizer.transform(text.iloc[(2*text.shape[0])//3:]).toarray()
+        return pd.concat([tfidf_bi,pd.DataFrame(sparse, columns=vectorizer.get_feature_names(),
+                index = index[(2*len(index))//3:])[cols]])

@@ -32,20 +32,67 @@ label = tweets.label[index]
 tkz = Tokenizer()
 
 #PREPROCESS
-tfidf = tkz.tfidf(tkz, text, index)
-print(tfidf.shape)
+#tfidf = tkz.tfidf(tkz, text, index)
+#print(tfidf.shape)
 
+count = tkz.counter(tkz, text, index)
+print(count.shape)
+
+#bigrams = tkz.bigrams(tkz, text, index)
+#print(bigrams.shape)
 bigrams = tkz.bigrams(tkz, text, index)
 print(bigrams.shape)
 
-tfidf = pd.concat([tfidf,bigrams], axis = 1)
-print(tfidf.shape)
+#tfidf = pd.concat([tfidf,bigrams], axis = 1)
+count = pd.concat([count,bigrams], axis = 1)
 
-#CLASSIFICATION
-X = np.asarray(tfidf)
-del(tfidf)
+size = []
+for i in range(len(text)):
+    size.append(len(tkz.tokenize(text.iloc[i])))
+
+#tfidf = pd.concat([tfidf,pd.Series(size, index = index)], axis = 1)
+#print(tfidf.shape)
+
+count = pd.concat([count,pd.Series(size, index = index, name = "size")], axis = 1)
+print(count.shape)
+features = np.array(list(count))
+
+#FEATURE SELECTION
+#X = np.asarray(tfidf)
+X = np.asarray(count)
+#del(tfidf)
+del(count)
 del(bigrams)
 Y = np.array(label)
+
+clf = XGBClassifier(learning_rate = 0.1, n_estimators = 200)
+'''
+IN : indices
+Out[10]: array([13403,  3044,  5432, ...,  8906,  8905,     0])
+
+In : importances[indices[0:10]]
+Out : array([ 0.12689805,  0.06760665,  0.04555314,  0.04157628,  0.0307303 ,
+        0.02928416,  0.02566884,  0.0253073 ,  0.0242227 ,  0.02205351], dtype=float32)
+'''
+
+import time
+%time clf.fit(X, Y)
+
+importances = clf.feature_importances_
+indices = np.argsort(importances)[::-1]
+print(features[indices[0:100]])
+
+plt.bar(range(200), importances[indices[0:200]])
+plt.ylim([0,max(importances)])
+plt.xlim([-1,200])
+plt.show()
+
+from sklearn.feature_selection import SelectFromModel
+model = SelectFromModel(clf, prefit=True)
+X_new = model.transform(X)
+
+
+#CLASSIFICATION
 
 '''
 X_train, X_test, Y_train, Y_test = train_test_split(X,Y)
@@ -115,7 +162,7 @@ np.set_printoptions(precision=2)
 
 # Plot non-normalized confusion matrix
 plt.figure()
-plot_confusion_matrix(cnf_matrix, classes=class_names,
+plot_confusion_matrix(cnf_matrix, clas=ses=class_names,
                       title='Confusion matrix, without normalization')
 score_func(Y_test,pred)
 '''
@@ -125,10 +172,12 @@ from sklearn.metrics import make_scorer
 f05_scorer = make_scorer(score_func)
 
 from sklearn.model_selection import cross_val_score
-estimators = [250,300,350,400, 450, 500]
+estimators = [200,250,300]
 '''
+200
+0.225481172054
 250
-0.232154290504
+0.238336451038
 300
 0.208889194582
 350
@@ -143,16 +192,17 @@ estimators = [250,300,350,400, 450, 500]
 
 res = []
 print('Début CV')
-'''
+
 for i, n in enumerate(estimators):
     clf = XGBClassifier(learning_rate = 0.1, n_estimators = n)
-
-    res.append(cross_val_score(clf, X, Y, scoring = f05_scorer, n_jobs=-1,
-            cv = 2))
     print(n)
+    res.append(cross_val_score(clf, X_new, Y, scoring = f05_scorer, n_jobs=-1,
+            cv = 2))
     print(np.mean(res[i]))
 print(res)
-'''
+
+#HYPEROPT
+
 def objective_function(x_int):
     print(x_int)
     objective_function.n_iterations += 1
@@ -163,7 +213,8 @@ def objective_function(x_int):
     print(max_depth)
     clf = XGBClassifier(learning_rate = 0.1, n_estimators=n_estimators,
                 max_depth=max_depth)
-    scores = cross_val_score(clf, X, Y, cv=3, scoring=f05_scorer, n_jobs = -1)
+    
+    scores = cross_val_score(clf, X_new, Y, cv=3, scoring=f05_scorer)
     print(objective_function.n_iterations, \
         ": n_estimators = ", n_estimators, \
         "\tmax_depth = ", max_depth, \
@@ -174,11 +225,11 @@ from hyperopt import fmin as hyperopt_fmin
 from hyperopt import tpe, hp, STATUS_OK, space_eval
 
 objective_function.n_iterations = 0
-best = hyperopt_fmin(objective_function,
-        space=(hp.qloguniform('n_estimators', np.log(10), np.log(500), 10),
-               hp.qloguniform('max_depth', np.log(2), np.log(100), 1)),
-    algo=tpe.suggest,
-    max_evals=10)
+
+%time best = hyperopt_fmin(objective_function,
+                           space=(hp.qloguniform('n_estimators', np.log(10), np.log(500), 10),
+                           hp.qloguniform('max_depth', np.log(2), np.log(100), 1)),
+                           algo=tpe.suggest, max_evals=10)
 
 best
 
