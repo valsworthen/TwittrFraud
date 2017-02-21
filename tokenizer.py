@@ -46,7 +46,7 @@ class Tokenizer:
         filtered_tokens = []
         # filter out any tokens not containing letters (e.g., numeric tokens, raw punctuation)
         for token in tokens:
-            if len(token) > 1:
+            if len(token) > 1:# or token == 'a':
                 if re.search('[A-Za-z]', token):
                     filtered_tokens.append(token)
         return filtered_tokens
@@ -76,6 +76,7 @@ class Tokenizer:
         sparse = vectorizer.transform(text.iloc[text.shape[0]//3:(2*text.shape[0])//3]).toarray()
         tfidf_bi = pd.concat([tfidf_bi,pd.DataFrame(sparse, columns=vectorizer.get_feature_names(),
                 index = index[len(index)//3:(2*len(index))//3])[cols]])
+
         sparse = vectorizer.transform(text.iloc[(2*text.shape[0])//3:]).toarray()
         return pd.concat([tfidf_bi,pd.DataFrame(sparse, columns=vectorizer.get_feature_names(),
                 index = index[(2*len(index))//3:])[cols]])
@@ -100,6 +101,11 @@ class Tokenizer:
         sparse = vectorizer.transform(text.iloc[text.shape[0]//3:(2*text.shape[0])//3]).toarray()
         tfidf_bi = pd.concat([tfidf_bi,pd.DataFrame(sparse, columns=vectorizer.get_feature_names(),
                 index = index[len(index)//3:(2*len(index))//3])[cols]])
+
         sparse = vectorizer.transform(text.iloc[(2*text.shape[0])//3:]).toarray()
         return pd.concat([tfidf_bi,pd.DataFrame(sparse, columns=vectorizer.get_feature_names(),
                 index = index[(2*len(index))//3:])[cols]])
+
+        sparse = vectorizer.transform(text.iloc[:text.shape[0]//3]).toarray()
+        tfidf_bi = pd.DataFrame(sparse, columns=vectorizer.get_feature_names(),
+                index = index[:len(index)//3])[cols]
